@@ -9,8 +9,6 @@ A Python-based reflected XSS scanner that:
 - Detects reflections via unique markers and simple HTML/response analysis.
 - Produces terminal output and an HTML report, with optional JSON report.
 
-> ⚠️ Use only against applications you are explicitly authorized to test.
-
 ---
 
 ## Assumptions
@@ -54,6 +52,8 @@ python
 class PayloadGenerator:
     def generate(self, position: str) -> List[PayloadInstance]:
 
+    
+
 1. Marker Strategy
 Each payload uses a placeholder {MARK} in its template (e.g. "<img src=x onerror=alert('{MARK}')>").
 
@@ -85,71 +85,44 @@ attr_value – intended for attribute values:
 
 Examples:
 {MARK}
-
 "{MARK}"
-
 '{MARK}'
-
 {MARK}" onmouseover="alert(1)"
-
 {MARK}><script>alert('{MARK}')</script>
-
 text – intended for text nodes outside of tags:
-
 Examples:
-
 {MARK}
-
 <img src=x onerror=alert('{MARK}')>
-
 <svg/onload=alert('{MARK}')>
-
 </script><script>console.log('{MARK}')</script>
-
 script – intended for JavaScript context inside <script> tags:
 
 Examples:
-
 console.log('{MARK}');
-
 ');alert('{MARK}');//
-
 ");/*{MARK}*/
-
 var x='{MARK}';
-
 event – intended for event-handler attributes:
 
 Examples:
-
 alert('{MARK}')
-
 console.log('{MARK}')
-
 confirm('{MARK}')
-
 tag_break – payloads that try to break out of existing tags:
 
 Examples:
-
 "><script>alert('{MARK}')</script>
-
 '><img src=1 onerror=console.log('{MARK}')>
-
 ></textarea><script>console.log('{MARK}')</script>
-
 url – for places where parameters may end up in URLs:
 
 Examples:
-
 javascript:alert('{MARK}')
-
 https://example.com/?q={MARK}
-
 The scanner can be restricted to specific positions via --positions, for example:
 
-bash
-Copy code
+
+
 --positions "attr_name,attr_value,text,script"
 Reflection Detection Approach
 Reflection detection happens in two steps:
@@ -200,44 +173,42 @@ If nothing conclusive is found, we fall back to unknown.
 These contexts are reported per finding, for example:
 
 text
-Copy code
+
 Contexts: script, attribute-value
 Setup / Run Steps
 1. Install Dependencies
-bash
-Copy code
+```
 pip install -r requirements.txt
 or
-
-bash
-Copy code
 pip install requests beautifulsoup4
+```
+
 2. Basic Usage
+```
 GET scan
-bash
-Copy code
 python advanced_xss_scanner.py \
   -u "https://example.com/search" \
   -p "q,category" \
   -X GET
 POST form scan
-bash
-Copy code
+
+
 python advanced_xss_scanner.py \
   -u "https://example.com/login" \
   -p "username,password" \
   -X POST
 POST JSON body scan
-bash
-Copy code
+
+
 python advanced_xss_scanner.py \
   -u "https://api.example.com/search" \
   -p "query" \
   -X POST \
   --json-body
+```
+
 3. Custom headers, cookies, auth, proxy
-bash
-Copy code
+```
 python advanced_xss_scanner.py \
   -u "https://target.com/app" \
   -p "q" \
@@ -247,9 +218,10 @@ python advanced_xss_scanner.py \
   --auth-bearer "YOUR_BEARER_TOKEN" \
   --proxy "http://127.0.0.1:8080" \
   --no-verify-ssl
+```
+
 4. Positions and performance tuning
-bash
-Copy code
+```
 python advanced_xss_scanner.py \
   -u "https://target.com/search" \
   -p "q" \
@@ -257,61 +229,31 @@ python advanced_xss_scanner.py \
   --positions "attr_name,attr_value,text,script" \
   --threads 20 \
   --delay 0.05
+```
+
 5. Reports
+
 Terminal summary: always printed.
-
 HTML report: --html-report xss_report.html (default name if not changed).
-
 JSON report (optional):
 
-bash
-Copy code
+```
 python advanced_xss_scanner.py \
   -u "https://target.com/search" \
   -p "q" \
   -X GET \
   --json-report xss_report.json
-Code Quality Considerations and Design Choices
-Separation of Concerns
+```
+Terminal Output:
+The scanner always prints a summary to the terminal, including:
+UR
+HTTP method
+Parameter
+Position (context tested)
+Injection mode (name/value)
+Status code
+Content-Type
+Marker
+Payload
+Detected contexts
 
-PayloadGenerator: responsible only for payloads/markers and context-specific templates.
-
-XSSScanner: handles HTTP mechanics, parallelism, reflection detection, and reporting.
-
-ReflectionFinding / PayloadInstance: dataclasses used to keep the code expressive and make reporting easy.
-
-Uniquely Identified Payloads
-
-Each payload has a unique marker, which allows:
-
-Distinguishing reflections even if multiple payloads were sent.
-
-Simplifying detection without complex regex.
-
-Parallel Scanning
-
-Uses ThreadPoolExecutor to speed up scanning when there are many parameters and payloads.
-
-Threads are bounded by --threads to avoid overwhelming the target.
-
-Fail-Safe Request Handling
-
-All network operations are wrapped in try/except blocks.
-
-Timeouts are configurable via --timeout.
-
-SSL verification can be disabled if needed for lab setups.
-
-Extensibility
-
-New contexts can be added in PayloadGenerator with minimal changes.
-
-New report formats can be layered on top of ReflectionFinding.
-
-Headless browser support or more advanced analysis could be added later without rewriting core logic.
-
-Usability
-
-CLI flags for headers, cookies, bearer tokens, proxies, and positions.
-
-Clear terminal output plus HTML and optional JSON reports.
