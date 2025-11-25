@@ -50,56 +50,40 @@ Since the spec is intentionally sparse, I made the following assumptions:
 
 The `PayloadGenerator` class is responsible for generating payloads tailored to different **injection positions**. It exposes:
 
-```python
+python
 class PayloadGenerator:
     def generate(self, position: str) -> List[PayloadInstance]:
-        ...
+
 1. Marker Strategy
 Each payload uses a placeholder {MARK} in its template (e.g. "<img src=x onerror=alert('{MARK}')>").
 
 When generating payloads:
-
 A unique marker is created per payload instance: e.g. XSS_ABC123_DE45.
-
 The marker is substituted into the template, and we keep:
-
 the final payload string,
-
 the marker itself (for detection),
-
 the position for later reporting.
 
 Example marker usage:
-
 Template: "</script><script>console.log('{MARK}')</script>"
-
 Marker: XSS_ABC123_DE45
-
 Payload: "</script><script>console.log('XSS_ABC123_DE45')</script>"
 
 This lets the scanner detect reflections even if other characters are escaped or transformed.
 
 2. Positions / Contexts Supported
 The generator supports at least these positions (more than the required 3):
-
 attr_name – intended for attribute-name injection:
-
 Examples:
-
 {MARK}
-
 data-{MARK}
-
 onmouseover{MARK}
-
 {MARK}="1"
 
 When scanning this position, the tool can inject payloads as parameter names (e.g. ?XSS_...=1) so they might be reflected in attribute names in server-side templates.
-
 attr_value – intended for attribute values:
 
 Examples:
-
 {MARK}
 
 "{MARK}"
